@@ -1,0 +1,12 @@
+version: '3'
+services:
+  listing_service_db:
+    container_name: applications-app-db
+    image: postgres:16.0-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: applications_db
+    ports:
+    - "5432:5432"
