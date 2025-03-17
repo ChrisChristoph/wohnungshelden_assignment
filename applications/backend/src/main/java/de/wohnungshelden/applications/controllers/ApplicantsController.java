@@ -2,28 +2,27 @@ package de.wohnungshelden.applications.controllers;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.MethodParameter;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import de.wohnungshelden.applications.filters.ApplicantsFilter;
-import de.wohnungshelden.applications.models.Applicants;
-import de.wohnungshelden.applications.services.ApplicantsServiceImpl;
-import de.wohnungshelden.applications.validators.ApplicantsManual;
-import de.wohnungshelden.applications.validators.ApplicantsPortal;
+import de.wohnungshelden.applications.dto.ApplicantFilterDTO;
+import de.wohnungshelden.applications.models.Applicant;
+import de.wohnungshelden.applications.services.ApplicantsService;
+import de.wohnungshelden.applications.validators.ApplicantManual;
+import de.wohnungshelden.applications.validators.ApplicantPortal;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * <h1>Applicants Controller</h1>
@@ -36,20 +35,21 @@ import de.wohnungshelden.applications.validators.ApplicantsPortal;
  * @since 16.03.2025
  */
 @RestController
+@Slf4j
 @RequestMapping("/api/applicants")
+@RequiredArgsConstructor
 public class ApplicantsController {
 
-    @Autowired
-    ApplicantsServiceImpl applicantsServiceImpl;
+    private final ApplicantsService applicantsService;
 
     /**
      * This method returns a List of all Applicants in the database.
      *
      * @return List of Applicants
      */
-    @RequestMapping(path = "/findAllApplicants", produces = "application/json")
-    public List<Applicants> findAllApplicants() {
-        return applicantsServiceImpl.findAllApplicants();
+    @GetMapping(path = "/", produces = "application/json")
+    public List<Applicant> findAllApplicants() {
+        return applicantsService.findAllApplicants();
     }
 
     /**
@@ -60,9 +60,9 @@ public class ApplicantsController {
      * @param applicants_filter Object with filter criteria
      * @return List of Applicants
      */
-    @RequestMapping(value = "/filter/{property_id}", method = RequestMethod.POST, consumes = "application/json")
-    public List<Applicants> filterProperties(@PathVariable long property_id, @RequestBody ApplicantsFilter applicants_filter) {
-        return applicantsServiceImpl.filterProperties(property_id, applicants_filter);
+    @GetMapping(value = "/{property_id}", consumes = "application/json")
+    public List<Applicant> filterApplicantsByProperty(@PathVariable long property_id, @RequestBody ApplicantFilterDTO applicants_filter) {
+        return applicantsService.filterProperties(property_id, applicants_filter);
     }
 
     /**
@@ -75,20 +75,21 @@ public class ApplicantsController {
      *
      * @return ResponseEntity
      */
-    @RequestMapping(value = "/add/manual/{property_id}", method = RequestMethod.POST, consumes = "application/json")
-    public ResponseEntity<?> addApplicants(@PathVariable long property_id, @Validated(ApplicantsManual.class) @RequestBody Applicants applicants, BindingResult result, ModelMap model)
+    @RequestMapping(value = "/manual/{property_id}", method = RequestMethod.POST, consumes = "application/json")
+    public ResponseEntity<Applicant> addApplicantManual(@PathVariable long property_id, @Validated(ApplicantManual.class) @RequestBody Applicant applicant, BindingResult result, ModelMap model)
             throws NoSuchMethodException, SecurityException, MethodArgumentNotValidException {
 
         if (result.hasErrors()) {
+            result.getAllErrors().forEach((e)-> {log.error(e.getDefaultMessage());});
             throw new MethodArgumentNotValidException(
-                    new MethodParameter(this.getClass().getDeclaredMethod("addApplicants", long.class, Applicants.class, BindingResult.class, ModelMap.class), 0),
+                    new MethodParameter(this.getClass().getDeclaredMethod("addApplicantManual", long.class, Applicant.class, BindingResult.class, ModelMap.class), 0),
                     result);
         }
-        applicantsServiceImpl.addApplicantsManual(applicants, property_id);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setLocation(ServletUriComponentsBuilder.fromCurrentRequest().path("/").build().toUri());
-        return new ResponseEntity<>(null, headers, HttpStatus.CREATED);
+        
+        log.info("Add manual Applicant: ");
+        log.info("Property: " + property_id);
+        log.info(String.valueOf(applicant));
+        return ResponseEntity.ok(applicantsService.addApplicantManual(applicant, property_id));
     }
 
     /**
@@ -101,20 +102,21 @@ public class ApplicantsController {
      *
      * @return ResponseEntity
      */
-    @RequestMapping(value = "/add/portal/{property_id}", method = RequestMethod.POST, consumes = "application/json")
-    public ResponseEntity<?> addApplicantsPortal(@PathVariable long property_id, @Validated(ApplicantsPortal.class) @RequestBody Applicants applicants, BindingResult result, ModelMap model)
+    @RequestMapping(value = "/portal/{property_id}", method = RequestMethod.POST, consumes = "application/json")
+    public ResponseEntity<Applicant> addApplicantPortal(@PathVariable long property_id, @Validated(ApplicantPortal.class) @RequestBody Applicant applicant, BindingResult result, ModelMap model)
             throws NoSuchMethodException, SecurityException, MethodArgumentNotValidException {
 
         if (result.hasErrors()) {
+            result.getAllErrors().forEach((e)-> {log.error(e.getDefaultMessage());});
             throw new MethodArgumentNotValidException(
-                    new MethodParameter(this.getClass().getDeclaredMethod("addApplicantsPortal", long.class, Applicants.class, BindingResult.class, ModelMap.class), 0),
+                    new MethodParameter(this.getClass().getDeclaredMethod("addApplicantPortal", long.class, Applicant.class, BindingResult.class, ModelMap.class), 0),
                     result);
         }
-        applicantsServiceImpl.addApplicantsPortal(applicants, property_id);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setLocation(ServletUriComponentsBuilder.fromCurrentRequest().path("/").build().toUri());
-        return new ResponseEntity<>(null, headers, HttpStatus.CREATED);
+        log.info("Add portal Applicant: ");
+        log.info("Property: " + property_id);
+        log.info(String.valueOf(applicant));
+        return ResponseEntity.ok(applicantsService.addApplicantPortal(applicant, property_id));
     }
 
     /**
@@ -122,8 +124,8 @@ public class ApplicantsController {
      *
      * @param id
      */
-    @DeleteMapping("/delete/{id}")
+    @DeleteMapping("/{id}")
     public void deleteApplicantsByID(@PathVariable long id) {
-        applicantsServiceImpl.deleteApplicantsByID(id);
+        applicantsService.deleteApplicantsByID(id);
     }
 }
