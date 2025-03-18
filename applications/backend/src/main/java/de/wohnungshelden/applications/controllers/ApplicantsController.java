@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
 
 import de.wohnungshelden.applications.dto.ApplicantFilterDTO;
 import de.wohnungshelden.applications.models.Applicant;
@@ -89,7 +90,7 @@ public class ApplicantsController {
         log.info("Add manual Applicant: ");
         log.info("Property: " + property_id);
         log.info(String.valueOf(applicant));
-        return ResponseEntity.ok(applicantsService.addApplicantManual(applicant, property_id));
+        return new ResponseEntity<Applicant>(applicantsService.addApplicantManual(applicant, property_id), HttpStatus.CREATED);
     }
 
     /**
@@ -116,7 +117,7 @@ public class ApplicantsController {
         log.info("Add portal Applicant: ");
         log.info("Property: " + property_id);
         log.info(String.valueOf(applicant));
-        return ResponseEntity.ok(applicantsService.addApplicantPortal(applicant, property_id));
+        return  new ResponseEntity<Applicant>(applicantsService.addApplicantPortal(applicant, property_id), HttpStatus.CREATED);
     }
 
     /**
